@@ -294,38 +294,51 @@
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('-translate-x-full');
     }
+<!-- Replace your existing startSpeechRecognition function with this improved version --><script>
+function startSpeechRecognition() {
+  // Check for browser support
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showNotification("Reconhecimento de voz não suportado neste navegador.", "error");
+    return;
+  }
 
-    function startSpeechRecognition() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = document.getElementById("sourceLang").value;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+  const recognition = new SpeechRecognition();
+  recognition.lang = document.getElementById("sourceLang").value;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
 
-      // Show recording indicator
-      const input = document.getElementById("input");
-      const originalPlaceholder = input.placeholder;
-      input.placeholder = "🎤 Gravando...";
-      input.classList.add('border-sky-500');
+  const input = document.getElementById("input");
+  const originalPlaceholder = input.placeholder;
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        input.value = transcript;
-        input.placeholder = originalPlaceholder;
-        input.classList.remove('border-sky-500');
-      };
+  // Helpers to show/hide recording indicator
+  const showRecordingState = () => {
+    input.placeholder = "🎤 Gravando...";
+    input.classList.add('border-sky-500');
+  };
+  const hideRecordingState = () => {
+    input.placeholder = originalPlaceholder;
+    input.classList.remove('border-sky-500');
+  };
 
-      recognition.onerror = () => {
-        input.placeholder = originalPlaceholder;
-        input.classList.remove('border-sky-500');
-      };
+  // Event listeners
+  recognition.addEventListener('start', showRecordingState);
+  recognition.addEventListener('end', hideRecordingState);
 
-      recognition.onend = () => {
-        input.placeholder = originalPlaceholder;
-        input.classList.remove('border-sky-500');
-      };
+  recognition.addEventListener('result', event => {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+  });
 
-      recognition.start();
-    }
+  recognition.addEventListener('error', event => {
+    console.error('SpeechRecognition error:', event.error);
+    hideRecordingState();
+    showNotification(`Erro no reconhecimento de voz: ${event.error}`, 'error');
+  });
+
+  recognition.start();
+}
+
 
     async function translateText() {
       const inputText = document.getElementById("input").value.trim();
